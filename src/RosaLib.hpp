@@ -6,6 +6,8 @@ static const char *rosa_lib = R"V0G0N(
 #include <Rcpp.h>
 using namespace Rcpp;
 
+// [[Rcpp::plugins(cpp14)]]
+
 namespace rosa {
 
 template <typename ElementT> struct RcppTypeTrait;
@@ -86,6 +88,16 @@ inline auto series(const LT lhs, const RT rhs, Environment env) {
     vec[i] = lhs + i;
   }
   return vec;
+}
+
+template <int RTYPE>
+inline IntegerVector seq_along(const Vector<RTYPE> &vec, Environment env) {
+  const int len = vec.size();
+  IntegerVector seq(len);
+  for (int i = 1; i <= len; ++i) {
+    seq[len] = i;
+  }
+  return seq;
 }
 
 // TODO(jianqiao): Auto-gen the code for all operators and all combinations of

@@ -218,14 +218,13 @@ void Codegen::genLang(const LangPtr &sxp, std::ostringstream &out) {
     // Whether use c loop or foreach loop.
     const auto &cond_args = Cast<LANGSXP>(args[0])->arguments()->values();
     const SPtr &e = cond_args[1];
-    if (e->type() == LANGSXP) {
-      const LangPtr el = Cast<LANGSXP>(e);
-      if (Cast<SYMSXP>(el->op())->name() == ":") {
-        const std::string &var = Cast<SYMSXP>(cond_args[0])->name();
-        out << var << " = " << genCode(el->arguments()->value(0)) << "; "
-            << var << " <= " << genCode(el->arguments()->value(1)) << "; "
-            << var << " += 1";
-      }
+    LangPtr el;
+    if (e->type() == LANGSXP &&
+      Cast<SYMSXP>((el=Cast<LANGSXP>(e))->op())->name() == ":") {
+      const std::string &var = Cast<SYMSXP>(cond_args[0])->name();
+      out << var << " = " << genCode(el->arguments()->value(0)) << "; "
+          << var << " <= " << genCode(el->arguments()->value(1)) << "; "
+          << var << " += 1";
     } else {
       out << "auto &" << genCode(args[0]);
     }
@@ -481,7 +480,7 @@ void Codegen::initCodegenRules() {
   }
 
   std::vector<std::string> builtin_fn_call_fns = {
-      "sqrt", "floor", "length", "nrow", "ncol", ":"
+      "sqrt", "floor", "length", "seq_along", "nrow", "ncol", ":"
   };
   for (const auto &fn : builtin_fn_call_fns) {
     const auto rename_it = op_renames_.find(fn);
