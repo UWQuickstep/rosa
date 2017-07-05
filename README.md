@@ -16,7 +16,7 @@ sudo R CMD INSTALL rosa
 ```
 ## Usage
 #### Example 1.
-```
+```R
 library(rosa)
 
 f <- function() {
@@ -46,9 +46,42 @@ print(f)
 
 f()
 ```
+Then the generated code (printed by `cat(info$code)`) looks like:
+```cpp
+// A long list of ROSA specialized functions.
+...
+
+inline double update(double x, double y, Environment env);
+
+//' @export
+// [[Rcpp::export]]
+double f() {
+  Function env_fn("environment", Environment::base_env());
+  Environment env(env_fn());
+  double result;
+  double v;
+  NumericVector values;
+  Function runif("runif", env);
+
+  values = runif(1e+08);
+  result = rosa::scalar<double>(runif(1), env);
+  for (auto &v : values) {
+    result = update(result, v, env);
+  }
+  return result;
+}
+
+inline double update(double x, double y, Environment env) {
+  if ((x)>(y)) {
+    return (x)-(y);
+  } else {
+    return (x)+(y);
+  }
+}
+```
 
 #### Example 2.
-```
+```R
 library(rosa)
 
 # Also try other sample functions: euclidean, randomwalk, exps.
