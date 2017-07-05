@@ -226,7 +226,7 @@ void Codegen::genLang(const LangPtr &sxp, std::ostringstream &out) {
           << var << " <= " << genCode(el->arguments()->value(1)) << "; "
           << var << " += 1";
     } else {
-      out << "auto &" << genCode(args[0]);
+      out << "auto " << genCode(args[0]);
     }
     out << ") {\n";
     indents_.emplace(ic.inc(2));
