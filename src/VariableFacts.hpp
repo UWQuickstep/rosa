@@ -5,7 +5,6 @@
 #include <set>
 #include <stack>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "Ast.hpp"
@@ -21,15 +20,15 @@ class VariableFacts {
  public:
   VariableFacts(const SPtr &input);
 
-  inline const std::unordered_map<SPtr, std::set<std::string>>& use() const {
+  inline const std::map<SPtr, std::set<std::string>>& use() const {
     return use_;
   }
 
-  inline const std::unordered_map<SPtr, std::set<std::string>>& def() const {
+  inline const std::map<SPtr, std::set<std::string>>& def() const {
     return def_;
   }
 
-  inline const std::unordered_map<SPtr, std::map<std::string, std::set<SPtr>>>&
+  inline const std::map<SPtr, std::map<std::string, std::set<SPtr>>>&
       values() const {
     return values_;
   }
@@ -44,9 +43,9 @@ class VariableFacts {
   void merge(const SPtr &node, const std::vector<SPtr> &children);
 
   std::stack<bool> lvalue_mode_;
-  std::unordered_map<SPtr, std::set<std::string>> use_;
-  std::unordered_map<SPtr, std::set<std::string>> def_;
-  std::unordered_map<SPtr, std::map<std::string, std::set<SPtr>>> values_;
+  std::map<SPtr, std::set<std::string>> use_;
+  std::map<SPtr, std::set<std::string>> def_;
+  std::map<SPtr, std::map<std::string, std::set<SPtr>>> values_;
 
   DISALLOW_COPY_AND_ASSIGN(VariableFacts);
 };

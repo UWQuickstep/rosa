@@ -15,10 +15,9 @@ gibbs_r <- function(N, thin) {
     }
     mat[i,] <- c(x,y)
   }
-  mat
+  return(mat)
 }
 
-gibbs_r(50000,1000)
-
+return(gibbs_r(50000,1000))
 }
 

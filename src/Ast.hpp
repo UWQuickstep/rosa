@@ -133,7 +133,33 @@ class ListSxp : public SExp {
     return values_.size();
   }
 
+  inline int indexOf(const std::size_t i, const std::string &name) const {
+    for (std::size_t i = 0; i < tags_.size(); ++i) {
+      const auto &tag = tags_[i];
+      if (tag->type() == SYMSXP) {
+        if (static_cast<const SymSxp*>(tag.get())->name() == name) {
+          return i;
+        }
+      }
+    }
+    for (std::size_t i = 0; i < tags_.size(); ++i) {
+      if (tags_[i]->type() == NILSXP) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  inline SPtr get(const std::size_t i, const std::string &name) const {
+    int idx = indexOf(i, name);
+    return idx >= 0 ? values_[idx] : nullptr;
+  }
+
   inline static ListPtr Create(SEXP sxp) {
+    if (TYPEOF(sxp) == NILSXP) {
+      return Create(std::vector<SPtr>(), std::vector<SPtr>());
+    }
+
     DCHECK(TYPEOF(sxp) == LISTSXP);
     std::vector<SPtr> tags;
     std::vector<SPtr> values;
@@ -179,7 +205,7 @@ class ListSxp : public SExp {
  */
 class CloSxp : public SExp {
  public:
-  inline const SPtr& formals() const {
+  inline const ListPtr& formals() const {
     return formals_;
   }
 
@@ -193,24 +219,31 @@ class CloSxp : public SExp {
 
   inline static CloPtr Create(SEXP sxp) {
     DCHECK(TYPEOF(sxp) == CLOSXP);
-    return CloPtr(new CloSxp(SExp::Create(FORMALS(sxp)),
-                             SExp::Create(BODY(sxp)),
-                             SExp::Create(CLOENV(sxp))));
+    return Create(SExp::Create(FORMALS(sxp)),
+                  SExp::Create(BODY(sxp)),
+                  SExp::Create(CLOENV(sxp)));
   }
 
   inline static CloPtr Create(
-      const SPtr formals, const SPtr body, const SPtr environment) {
-    return CloPtr(new CloSxp(formals, body, environment));
+      const SPtr &formals, const SPtr &body, const SPtr &environment) {
+    ListPtr lf;
+    if (formals->type() == NILSXP) {
+      lf = ListSxp::Create(std::vector<SPtr>(), std::vector<SPtr>());
+    } else {
+      DCHECK(formals->type() == LISTSXP);
+      lf = std::static_pointer_cast<const ListSxp>(formals);
+    }
+    return CloPtr(new CloSxp(lf, body, environment));
   }
 
  private:
-  CloSxp(const SPtr formals, const SPtr body, const SPtr environment)
+  CloSxp(const ListPtr &formals, const SPtr &body, const SPtr &environment)
       : SExp(CLOSXP),
         formals_(formals),
         body_(body),
         environment_(environment) {}
 
-  SPtr formals_;
+  ListPtr formals_;
   SPtr body_;
   SPtr environment_;
 };

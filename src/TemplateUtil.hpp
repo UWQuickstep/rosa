@@ -13,36 +13,6 @@
 
 namespace rosa {
 
-template <typename Functor>
-inline auto InvokeOnSPtr(const SPtr &sxp,
-                         const Functor &functor) {
-  switch (sxp->type()) {
-    case SYMSXP:
-      return functor(std::static_pointer_cast<const SymSxp>(sxp));
-    case LISTSXP:
-      return functor(std::static_pointer_cast<const ListSxp>(sxp));
-    case CLOSXP:
-      return functor(std::static_pointer_cast<const CloSxp>(sxp));
-    case LANGSXP:
-      return functor(std::static_pointer_cast<const LangSxp>(sxp));
-    case CHARSXP:
-      return functor(std::static_pointer_cast<const CharSxp>(sxp));
-    case LGLSXP:
-      return functor(std::static_pointer_cast<const LglSxp>(sxp));
-    case INTSXP:
-      return functor(std::static_pointer_cast<const IntSxp>(sxp));
-    case REALSXP:
-      return functor(std::static_pointer_cast<const RealSxp>(sxp));
-    case STRSXP:
-      return functor(std::static_pointer_cast<const StrSxp>(sxp));
-    case VECSXP:
-      return functor(std::static_pointer_cast<const VecSxp>(sxp));
-    default:
-      // Unhandled SEXP types.
-      return functor(std::static_pointer_cast<const OtherSxp>(sxp));
-  }
-}
-
 template <int type_id>
 struct SExpTypeTrait;
 
@@ -75,6 +45,40 @@ inline auto Cast(const SPtr &sxp) {
       const typename SExpTypeTrait<target_type_id>::type>(sxp);
 }
 
+
+template <typename Functor>
+inline auto InvokeOnSPtr(const SPtr &sxp,
+                         const Functor &functor) {
+  switch (sxp->type()) {
+    case NILSXP:
+      return functor(Cast<NILSXP>(sxp));
+    case SYMSXP:
+      return functor(Cast<SYMSXP>(sxp));
+    case LISTSXP:
+      return functor(Cast<LISTSXP>(sxp));
+    case CLOSXP:
+      return functor(Cast<CLOSXP>(sxp));
+    case LANGSXP:
+      return functor(Cast<LANGSXP>(sxp));
+    case CHARSXP:
+      return functor(Cast<CHARSXP>(sxp));
+    case LGLSXP:
+      return functor(Cast<LGLSXP>(sxp));
+    case INTSXP:
+      return functor(Cast<INTSXP>(sxp));
+    case REALSXP:
+      return functor(Cast<REALSXP>(sxp));
+    case STRSXP:
+      return functor(Cast<STRSXP>(sxp));
+    case VECSXP:
+      return functor(Cast<VECSXP>(sxp));
+    default:
+      // Unhandled SEXP types.
+      return functor(std::static_pointer_cast<const OtherSxp>(sxp));
+  }
+}
+
+
 template <typename ContainerT, typename KeyT>
 inline bool ContainsKey(
     const ContainerT &container, const KeyT& key,
@@ -82,6 +86,7 @@ inline bool ContainsKey(
         !std::is_same<ContainerT, std::vector<KeyT>>::value>::type * = 0) {
   return container.find(key) != container.end();
 }
+
 
 template <typename ContainerT, typename KeyT>
 inline bool ContainsKey(

@@ -5,12 +5,15 @@ add_library(rcpp_AstRule ../empty_src.cpp AstRule.hpp)
 add_library(rcpp_AstTransforms AstTransforms.cpp AstTransforms.hpp)
 add_library(rcpp_Cfg Cfg.cpp Cfg.hpp)
 add_library(rcpp_CfgAnalysis ../empty_src.cpp CfgAnalysis.hpp)
+add_library(rcpp_Codegen Codegen.cpp Codegen.hpp)
+add_library(rcpp_CodegenRules CodegenRules.cpp CodegenRules.hpp)
 add_library(rcpp_DebugUtil DebugUtil.cpp DebugUtil.hpp)
 add_library(rcpp_HashUtil ../empty_src.cpp HashUtil.hpp)
 add_library(rcpp_KnownFunctions KnownFunctions.cpp KnownFunctions.hpp)
 add_library(rcpp_Macros ../empty_src.cpp Macros.hpp)
 add_library(rcpp_ReachingDefinition ReachingDefinition.cpp ReachingDefinition.hpp)
 add_library(rcpp_Rosa Rosa.cpp)
+add_library(rcpp_RosaLib ../empty_src.cpp RosaLib.hpp)
 add_library(rcpp_TemplateUtil ../empty_src.cpp TemplateUtil.hpp)
 add_library(rcpp_Type Type.cpp Type.hpp)
 add_library(rcpp_TypeInference TypeInference.cpp TypeInference.hpp)
@@ -40,6 +43,20 @@ target_link_libraries(rcpp_Cfg
 target_link_libraries(rcpp_CfgAnalysis
                       rcpp_Cfg
                       rcpp_Macros)
+target_link_libraries(rcpp_Codegen
+                      rcpp_Ast
+                      rcpp_AstPrinter
+                      rcpp_Cfg
+                      rcpp_CodegenRules
+                      rcpp_Macros
+                      rcpp_Rcpp
+                      rcpp_RosaLib
+                      rcpp_TemplateUtil
+                      rcpp_Type
+                      rcpp_TypeInference)
+target_link_libraries(rcpp_CodegenRules
+                      rcpp_Macros
+                      rcpp_Type)
 target_link_libraries(rcpp_DebugUtil
                       rcpp_Ast
                       rcpp_AstPrinter
@@ -65,9 +82,12 @@ target_link_libraries(rcpp_Rosa
                       rcpp_AstTransforms
                       rcpp_Cfg
                       rcpp_CfgAnalysis
+                      rcpp_Codegen
                       rcpp_DebugUtil
+                      rcpp_Macros
                       rcpp_Rcpp
                       rcpp_ReachingDefinition
+                      rcpp_TemplateUtil
                       rcpp_Type
                       rcpp_TypeInference
                       rcpp_VariableFacts)
@@ -88,6 +108,9 @@ target_link_libraries(rcpp_TypeInference
                       rcpp_TypeRules
                       rcpp_VariableFacts)
 target_link_libraries(rcpp_TypeRules
+                      rcpp_Ast
+                      rcpp_Macros
+                      rcpp_TemplateUtil
                       rcpp_Type)
 target_link_libraries(rcpp_VariableFacts
                       rcpp_Ast

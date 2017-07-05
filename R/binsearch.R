@@ -16,9 +16,10 @@ bsearch <- function(x,y) {
 }
 
 nn=1e5          # set this to 1e6 for a large run
-x <- sample (1:1000,nn,replace=TRUE)
-y <- sample (1:1000,nn,replace=TRUE)
+x <- sort(sample(1:1000,nn,replace=TRUE))
+y <- sort(sample(1:1000,nn,replace=TRUE))
 z <- numeric(nn)
 for(i in 1:length(y)) z[i] <- bsearch(x,y[i])
 
+return(z)
 }

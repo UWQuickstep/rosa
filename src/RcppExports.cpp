@@ -5,31 +5,22 @@
 
 using namespace Rcpp;
 
-// codegen
-void codegen(RObject exp, Environment env);
-RcppExport SEXP rosa_codegen(SEXP expSEXP, SEXP envSEXP) {
+// codegen_impl
+List codegen_impl(RObject exp, const std::string& fname, Environment env);
+RcppExport SEXP rosa_codegen_impl(SEXP expSEXP, SEXP fnameSEXP, SEXP envSEXP) {
 BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< RObject >::type exp(expSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type fname(fnameSEXP);
     Rcpp::traits::input_parameter< Environment >::type env(envSEXP);
-    codegen(exp, env);
-    return R_NilValue;
-END_RCPP
-}
-// PrintExp
-void PrintExp(RObject x);
-RcppExport SEXP rosa_PrintExp(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< RObject >::type x(xSEXP);
-    PrintExp(x);
-    return R_NilValue;
+    rcpp_result_gen = Rcpp::wrap(codegen_impl(exp, fname, env));
+    return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"rosa_codegen", (DL_FUNC) &rosa_codegen, 2},
-    {"rosa_PrintExp", (DL_FUNC) &rosa_PrintExp, 1},
+    {"rosa_codegen_impl", (DL_FUNC) &rosa_codegen_impl, 3},
     {NULL, NULL, 0}
 };
 

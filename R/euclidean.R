@@ -30,5 +30,6 @@ n2 = 1000L     # set this to 1000L for a large run
 X = matrix(rnorm(n1 * p0), n1, p0)
 Y = matrix(rnorm(n2 * p0), n2, p0)
 b <- dist(X, Y)
+return(b)
 
 }

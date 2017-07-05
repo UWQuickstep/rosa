@@ -1,13 +1,13 @@
 #include "DebugUtil.hpp"
 
+#include <sstream>
+
 #include "Ast.hpp"
 #include "AstPrinter.hpp"
 #include "Cfg.hpp"
 #include "ReachingDefinition.hpp"
 #include "TemplateUtil.hpp"
 #include "VariableFacts.hpp"
-
-#include <sstream>
 
 namespace rosa {
 
@@ -118,8 +118,6 @@ std::string TypePrinter::ToString(const TypeInference &ti) {
     out << "\n\n";
 
     out << "******** RETURN TYPES ********\n";
-    if (ContainsKey(ti.rtn_types(), it.first)) {
-
     DCHECK(ContainsKey(ti.rtn_types(), it.first));
     const auto &rtn_types = ti.rtn_types().at(it.first);
     for (const auto &it : rtn_types) {
@@ -128,15 +126,13 @@ std::string TypePrinter::ToString(const TypeInference &ti) {
       out << "\n>> return type: " << it.second->getName() << "\n";
     }
 
-    }
-
     out << "\n******** DEF TYPES ********\n";
     for (const auto &node : cfg->nodes()) {
       out << "[" << node->id << "]";
       const auto &dfit = ti.def_types().find(node);
       if (dfit != ti.def_types().end()) {
         for (const auto &ts : dfit->second) {
-          out << " " << ts.first << "{";
+          out << " " << ts.first;
           bool first = true;
           for (const auto &t : ts.second) {
             if (first) {
@@ -144,30 +140,30 @@ std::string TypePrinter::ToString(const TypeInference &ti) {
             } else {
               out << ", ";
             }
-            PrintSignature(t.first, out);
-            out  << ":" << t.second->getName();
+            if (ts.second.size() > 1) {
+              out << " ";
+              PrintSignature(t.first, out);
+            }
+            out << ": " << t.second->getName();
           }
-          out << "}";
         }
       }
       out << "\n";
     }
 
     out << "\n********  DECL TYPES ********\n";
-    if (ContainsKey(ti.decl_types(), it.first)) {
-
     DCHECK(ContainsKey(ti.decl_types(), it.first));
     const auto &decl_types = ti.decl_types().at(it.first);
     for (const auto &ts : decl_types) {
       out << ts.first;
       for (const auto &t : ts.second) {
-        out << " ";
-        PrintSignature(t.first, out);
-        out << ":" << t.second->getName();
+        if (ts.second.size() > 1) {
+          out << " ";
+          PrintSignature(t.first, out);
+        }
+        out << ": " << t.second->getName();
       }
       out << "\n";
-    }
-
     }
     out << "\n";
   }
@@ -186,8 +182,11 @@ void TypePrinter::Visit(const SPtr &sxp,
   } else {
     for (const auto &t : it->second) {
       out << ">> ";
-      PrintSignature(t.first, out);
-      out << " type: " << t.second->getName() << "\n";
+      if (it->second.size() > 1) {
+        PrintSignature(t.first, out);
+        out << " ";
+      }
+      out << "type: " << t.second->getName() << "\n";
     }
   }
 

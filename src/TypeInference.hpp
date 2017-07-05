@@ -47,6 +47,26 @@ class TypeInference {
     return user_defined_fns_;
   }
 
+  inline void printDefTypes() const {
+    std::cerr << "---- ALL DEF TYPES ----\n";
+    for (const auto &it1 : def_types_) {
+      std::cerr << "[" << it1.first->id << "]\n";
+      for (const auto &it2 : it1.second) {
+        std::cerr << it2.first << ":";
+        for (const auto &it3 : it2.second) {
+          const Type *t = it3.second;
+          if (t == nullptr) {
+            std::cerr << " null";
+          } else {
+            std::cerr << " " << t->getName();
+          }
+        }
+        std::cerr << "\n";
+      }
+    }
+    std::cerr << "\n";
+  }
+
 protected:
   void initTypeRules();
 
@@ -74,7 +94,7 @@ private:
   SPtr ast_;
   CfgCatalog &catalog_;
   const VariableFacts &vf_;
-  std::map<std::string, std::unique_ptr<TypeRule>> type_rules_;
+  std::map<std::string, std::unique_ptr<rule::type::TypeRule>> type_rules_;
 
   std::stack<FnSignature> fn_sigs_;
   std::stack<CfgPtr> cfgs_;

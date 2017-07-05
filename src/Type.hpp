@@ -120,7 +120,7 @@ class NilType : public ScalarType,
                 public PlainTypeInstancePolicy<NilType> {
  public:
   std::string getName() const override {
-    return "NULL";
+    return "void";
   }
 
  private:
@@ -250,7 +250,7 @@ class VecType : public ParametricType,
 };
 
 class MatType : public ParametricType,
-                public ParametricTypeInstancePolicy<VecType> {
+                public ParametricTypeInstancePolicy<MatType> {
  public:
   std::string getName() const override {
     return "matrix<" + getParameter().getName() + ">";

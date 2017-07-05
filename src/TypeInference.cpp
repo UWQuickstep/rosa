@@ -1,5 +1,6 @@
 #include "TypeInference.hpp"
 
+#include <cmath>
 #include <memory>
 #include <set>
 #include <string>
@@ -49,18 +50,18 @@ const Type& TypeInference::infer(const SPtr &sxp) {
       break;
     case LGLSXP:
       t = &scalarOrVector(LglType::Instance(),
-                               Cast<LGLSXP>(sxp)->values().size());
+                          Cast<LGLSXP>(sxp)->values().size());
       break;
     case INTSXP:
       t = &scalarOrVector(IntType::Instance(),
-                               Cast<INTSXP>(sxp)->values().size());
+                          Cast<INTSXP>(sxp)->values().size());
       break;
     case REALSXP: {
       bool isInt = true;
-      auto const& values = Cast<REALSXP>(sxp)->values();
-      for (const int v : values) {
+      const auto &values = Cast<REALSXP>(sxp)->values();
+      for (const double v : values) {
         double intpart;
-        if (modf(v, &intpart) != 0.0) {
+        if (std::modf(v, &intpart) != 0.0) {
           isInt = false;
         }
       }
@@ -112,7 +113,11 @@ const Type& TypeInference::inferVar(const std::string &var, const SPtr &sxp) {
           st = pt->second;
         }
       } else {
-        st = def_types_[node][var][fn_sigs_.top()];
+        const auto &ts = def_types_[node][var];
+        const auto it = ts.find(fn_sigs_.top());
+        if (it != ts.end()) {
+          st = it->second;
+        }
       }
       if (st != nullptr) {
         inferred_type = &inferred_type->join(*st);
@@ -147,7 +152,7 @@ const Type& TypeInference::inferLang(const LangPtr &sxp) {
       const auto &values = values_at_sxp.at(op_name);
       if (values.size() == 1 && (*values.begin())->type() == CLOSXP) {
         const CloPtr &clo = Cast<CLOSXP>(*values.begin());
-        FnSignature sig = inferSignature(Cast<LISTSXP>(clo->formals()), sxp->arguments());
+        FnSignature sig = inferSignature(clo->formals(), sxp->arguments());
         user_defined_fns_[sxp][fn_sigs_.top()] = std::make_pair(clo, sig);
 
         const Type *t = rtn_types_[clo][sig];
@@ -163,8 +168,9 @@ const Type& TypeInference::inferLang(const LangPtr &sxp) {
     return AnyType::Instance();
   }
 
+  const auto &args = sxp->arguments();
   std::vector<const Type*> arg_types;
-  for (const auto &arg : sxp->arguments()->values()) {
+  for (const auto &arg : args->values()) {
     arg_types.push_back(&infer(arg));
   }
 
@@ -173,7 +179,9 @@ const Type& TypeInference::inferLang(const LangPtr &sxp) {
   if (fn_rule == type_rules_.end()) {
     return AnyType::Instance();
   }
-  const Type &inferred_type = fn_rule->second->apply(arg_types);
+
+  // TODO(jianqiao): Constant propagation to find values for args.
+  const Type &inferred_type = fn_rule->second->apply(arg_types, args);
   if (op_name == "<-" || op_name == "=" || op_name == "_$for_cond") {
     const SPtr lp = sxp->arguments()->value(0);
     if (lp->type() == SYMSXP) {
@@ -201,14 +209,15 @@ const Type& TypeInference::inferFnCall(const CloPtr &clo) {
     const auto &it = def_types_.find(node);
     if (it != def_types_.end()) {
       for (auto &ts : it->second) {
-        const Type *t = ts.second[fn_sigs_.top()];
-        if (t != nullptr) {
-          const Type *dt = decl_types[ts.first][fn_sigs_.top()];
-          if (dt == nullptr) {
-            dt = &NilType::Instance();
-          }
-          decl_types[ts.first][fn_sigs_.top()] = &dt->join(*t);
+        const Type *&t = ts.second[fn_sigs_.top()];
+        if (t == nullptr) {
+          t = &AnyType::Instance();
         }
+        const Type *dt = decl_types[ts.first][fn_sigs_.top()];
+        if (dt == nullptr) {
+          dt = &NilType::Instance();
+        }
+        decl_types[ts.first][fn_sigs_.top()] = &dt->join(*t);
       }
     }
   }
@@ -301,13 +310,30 @@ void TypeInference::constructSymType(const SPtr &sxp, const Type &type) {
   } else if(sxp->type() == LANGSXP) {
     const LangPtr lang = Cast<LANGSXP>(sxp);
     const std::string &op_name = Cast<SYMSXP>(lang->op())->name();
+
     if (op_name == "[" || op_name == "[[") {
       const auto &args = lang->arguments()->values();
-      if (args.size() != 2) {
-        // only deals with 1-dimensional accessing
+      // Some cases in 2-dimensional accessing.
+      if (args.size() == 3) {
+        if (op_name == "[[") {
+          constructSymType(sxp, MatType::Instance(*t));
+        } else {
+          if (t->isScalar()) {
+            constructSymType(args[0], MatType::Instance(*t));
+          } else if (t->getTypeID() == kVector) {
+            const Type &pt = static_cast<const VecType*>(t)->getParameter();
+            constructSymType(args[0], MatType::Instance(pt));
+          } else if (t->getTypeID() == kMatrix) {
+            constructSymType(args[0], *t);
+          }
+        }
         return;
       }
 
+      // Cases in 1-dimensional accessing.
+      if (args.size() != 2) {
+        return;
+      }
       const Type *sym_type = &infer(args[0]);
       const Type *arg_type = &infer(args[1]);
       if (t->getTypeID() == kVector) {
@@ -337,7 +363,7 @@ void TypeInference::constructSymType(const SPtr &sxp, const Type &type) {
 }
 
 void TypeInference::initTypeRules() {
-  type_rules_.clear();
+  using namespace rule::type;
 
   type_rules_["c"] = std::make_unique<ConcatRule>();
   type_rules_["{"] = std::make_unique<LastArgRule>();
@@ -349,26 +375,35 @@ void TypeInference::initTypeRules() {
   type_rules_["if"] = std::make_unique<IfRule>();
   type_rules_["for"] = std::make_unique<StaticReturnRule>(AnyType::Instance());
   type_rules_["while"] = std::make_unique<StaticReturnRule>(AnyType::Instance());
-  type_rules_["return"] = std::make_unique<FirstArgRule>();
-  type_rules_["matrix"] = std::make_unique<MatrixRule>();
-  type_rules_["as.logical"] = std::make_unique<AsScalarRule>(LglType::Instance());
-  type_rules_["as.integer"] = std::make_unique<AsScalarRule>(IntType::Instance());
-  type_rules_["as.double"] = std::make_unique<AsScalarRule>(DblType::Instance());
+  type_rules_["return"] = std::make_unique<ReturnRule>();
+  type_rules_["vector"] = std::make_unique<CreateVectorRule>();
+  type_rules_["matrix"] = std::make_unique<CreateMatrixRule>();
 
   type_rules_["_$if_cond"] = std::make_unique<FirstArgRule>();
   type_rules_["_$while_cond"] = std::make_unique<FirstArgRule>();
   type_rules_["_$for_cond"] = std::make_unique<ForCondRule>();
 
+  type_rules_["as.logical"] = std::make_unique<AsScalarOrVectorRule>(
+      LglType::Instance());
+  type_rules_["as.integer"] = std::make_unique<AsScalarOrVectorRule>(
+      IntType::Instance());
+  type_rules_["as.double"] = std::make_unique<AsScalarOrVectorRule>(
+      DblType::Instance());
   type_rules_["seq_along"] = std::make_unique<StaticReturnRule>(
       VecType::Instance(IntType::Instance()));
 
-  // simplified type rules here, no type-error checking
+  // Simplified type rules here, no type-error checking.
+  std::vector<std::string> rtn_first_arg_fns = { "abs" };
+  for (const auto &name : rtn_first_arg_fns) {
+    type_rules_[name] = std::make_unique<FirstArgRule>();
+  }
+
   std::vector<std::string> join_fns = { "+", "-", "*", "^", "(", "%%" };
   for (const auto &name : join_fns) {
     type_rules_[name] = std::make_unique<JoinRule>();
   }
 
-  std::vector<std::string> make_vec_fns = { "sample", "rep" };
+  std::vector<std::string> make_vec_fns = { "sample", "rep", "sort" };
   for (const auto &name : make_vec_fns) {
     type_rules_[name] = std::make_unique<MakeVecRule>();
   }
@@ -376,6 +411,11 @@ void TypeInference::initTypeRules() {
   std::vector<std::string> rtn_int_fns = { "length", "nrow", "ncol" };
   for (const auto &name : rtn_int_fns) {
     type_rules_[name] = std::make_unique<StaticReturnRule>(IntType::Instance());
+  }
+
+  std::vector<std::string> rtn_scalar_fns = { "sum", "mean" };
+  for (const auto &name : rtn_scalar_fns) {
+    type_rules_[name] = std::make_unique<ReturnScalarRule>();
   }
 
   std::vector<std::string> rtn_str_fns = { "paste" };
@@ -393,10 +433,12 @@ void TypeInference::initTypeRules() {
     type_rules_[name] = std::make_unique<AdaptiveReturnRule>(DblType::Instance());
   }
 
-  std::vector<std::string> rtn_dbl_vec_fns = { "numeric", "rnorm", "rbeta", "runif" };
+  // TODO: Fix arguments mapping problem.
+  std::vector<std::string> rtn_dbl_vec_fns =
+      { "numeric", "rgamma", "rnorm", "rbeta", "runif" };
   for (const auto &name : rtn_dbl_vec_fns) {
-    type_rules_[name] = std::make_unique<StaticReturnRule>(
-        VecType::Instance(DblType::Instance()));
+    type_rules_[name] = std::make_unique<AdaptiveScalarOrVectorOnFirstArgumentRule>(
+        DblType::Instance());
   }
 
   std::vector<std::string> rtn_adaptive_join_fns = { ">", "<", ">=", "<=", "==" };

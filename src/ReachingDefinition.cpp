@@ -69,14 +69,9 @@ CfgFactPtr ReachingDefinition::updateFact(
       static_cast<const ReachingDefinitionFact*>(old.get())->locations_;
 
   if (node == cfg_->enterNode()) {
-    const SPtr formals = clo_->formals();
-    if (formals->type() != NILSXP) {
-      DCHECK(formals->type() == LISTSXP);
-      const auto &arg_names = Cast<LISTSXP>(formals)->tags();
-      for (const auto &arg_name : arg_names) {
-        DCHECK(arg_name->type() == SYMSXP);
-        new_fact->locations_[Cast<SYMSXP>(arg_name)->name()] = { node };
-      }
+    for (const auto &arg_name : clo_->formals()->tags()) {
+      DCHECK(arg_name->type() == SYMSXP);
+      new_fact->locations_[Cast<SYMSXP>(arg_name)->name()] = { node };
     }
   } else if (node->sp) {
     const auto it = vf_.def().find(node->sp);

@@ -2,12 +2,12 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #' @export
-codegen <- function(exp, env) {
-    invisible(.Call('rosa_codegen', PACKAGE = 'rosa', exp, env))
+codegen_impl <- function(exp, fname, env) {
+    .Call('rosa_codegen_impl', PACKAGE = 'rosa', exp, fname, env)
 }
 
 #' @export
-PrintExp <- function(x) {
-    invisible(.Call('rosa_PrintExp', PACKAGE = 'rosa', x))
+test <- function() {
+    .Call('rosa_test', PACKAGE = 'rosa')
 }
 
