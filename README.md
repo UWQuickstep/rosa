@@ -5,3 +5,58 @@ This is an intial version of the ROSA package. This package is being released pr
 The authors acknowledge that help from the core R developer community is needed to help ROSA see the light of the day, and we look forward to hearing from you.
 
 For more information, please contact: Jignesh Patel (jignesh@cs.wisc.edu)
+
+---
+## Installation
+Checkout, build and install the package.
+```
+git clone https://github.com/UWQuickstep/rosa.git
+R CMD build rosa
+sudo R CMD INSTALL rosa
+```
+## Usage
+#### Example 1.
+```
+library(rosa)
+
+f <- function() {
+  update <- function(x, y) {
+    if (x > y) {
+      return(x - y)
+    } else {
+      return(x + y)
+    }
+  }
+  
+  values <- runif(1e8)
+  result <- runif(1)
+  for (v in values) {
+    result <- update(result, v)
+  }
+  return(result)
+}
+
+info <- codegen(f)
+
+cat(info$ast)
+cat(info$analysis)
+cat(info$type)
+cat(info$code)
+print(f)
+
+f()
+```
+
+#### Example 2.
+```
+library(rosa)
+
+# Also try other sample functions: euclidean, randomwalk, exps.
+print(oddcount)
+
+info <- codegen(oddcount, "c_oddcount")
+
+cat(info$code)
+
+c_oddcount()
+```
