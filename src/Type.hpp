@@ -2,6 +2,7 @@
 #define ROSA_TYPE_HPP_
 
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <unordered_map>
 

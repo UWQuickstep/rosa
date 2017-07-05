@@ -6,8 +6,6 @@ static const char *rosa_lib = R"V0G0N(
 #include <Rcpp.h>
 using namespace Rcpp;
 
-// [[Rcpp::plugins(cpp14)]]
-
 namespace rosa {
 
 template <typename ElementT> struct RcppTypeTrait;

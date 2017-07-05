@@ -48,7 +48,7 @@ class AstPrinter {
   inline static void ToStringDispatch(const SPtr &sxp, State *state) {
     ++state->level;    
     InvokeOnSPtr(sxp, [state](const auto &sxp) {
-        ToStringInternal(sxp, state);
+        AstPrinter::ToStringInternal(sxp, state);
     });
     --state->level;
   }
